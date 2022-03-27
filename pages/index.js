@@ -1,9 +1,10 @@
 import Head from "next/head";
 import Image from "next/image";
 import Banner from "../components/banner";
+import Card from "../components/card";
 import styles from "../styles/Home.module.css";
-
-export default function Home() {
+// import data from "../data/coffee-stores.json";
+export default function Home(props) {
   return (
     <div className={styles.container}>
       <Head>
@@ -27,7 +28,54 @@ export default function Home() {
             height={400}
           />
         </div>
+        {props.coffeeStores.length != 0 && (
+          <>
+            <h2 className={styles.heading2}>Toronto Stores</h2>
+            <div className={styles.cardLayout}>
+              {props.coffeeStores.map((coffeeStore) => {
+                return (
+                  <Card
+                    key={coffeeStore.fsq_id}
+                    name={coffeeStore.name}
+                    imgUrl={
+                      coffeeStore.imgUrl ||
+                      "https://images.unsplash.com/photo-1504753793650-d4a2b783c15e?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80"
+                    }
+                    href={`coffee-store/${coffeeStore.fsq_id}`}
+                    className={styles.card}
+                  />
+                );
+              })}
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
+}
+
+export async function getStaticProps(context) {
+  const options = {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      Authorization: `${process.env.FOURSQUARE_API_KEY}`,
+    },
+  };
+
+  const data = await fetch(
+    `https://api.foursquare.com/v3/places/nearby?ll=43.65267%2C-79.39545&query=coffee%20stores`,
+    options
+  )
+    .then((response) => response.json())
+    .then((response) => {
+      console.log("response", response);
+      return response.results;
+    })
+    .catch((err) => console.error(err));
+  return {
+    props: {
+      coffeeStores: data,
+    },
+  };
 }
