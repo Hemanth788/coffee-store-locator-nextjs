@@ -1,37 +1,85 @@
-import Head from "next/head";
-import Link from "next/link";
+import { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
+import Head from "next/head";
 import Image from "next/image";
-import styles from "../../styles/coffee-store.module.css";
+
 import cls from "classnames";
 
-const options = {
-  method: "GET",
-  headers: {
-    Accept: "application/json",
-    Authorization: `${process.env.FOURSQUARE_API_KEY}`,
-  },
-};
+import styles from "../../styles/coffee-store.module.css";
+import fetchCoffeeStores from "../../lib/coffee-stores";
 
-const CoffeeStore = (props) => {
+import { isEmpty } from "../../utils";
+import { StoreContext } from "../_app";
+
+export async function getStaticProps(staticProps) {
+  const params = staticProps.params;
+
+  const coffeeStores = await fetchCoffeeStores();
+  const findCoffeeStoreById = coffeeStores.find((coffeeStore) => {
+    return coffeeStore.fsq_id.toString() === params.id;
+  });
+  return {
+    props: {
+      coffeeStore: findCoffeeStoreById ? findCoffeeStoreById : {},
+    },
+  };
+}
+
+export async function getStaticPaths() {
+  const coffeeStores = await fetchCoffeeStores();
+  const paths = coffeeStores.map((coffeeStore) => {
+    return {
+      params: {
+        id: coffeeStore.fsq_id.toString(),
+      },
+    };
+  });
+  return {
+    paths,
+    fallback: true,
+  };
+}
+
+const CoffeeStore = (initialProps) => {
+  const router = useRouter();
+  const [coffeeStore, setCoffeeStore] = useState(
+    initialProps.coffeeStore || {}
+  );
+  const id = router.query.id;
+
   const {
-    isFallback,
-    query: { id },
-    ...others
-  } = useRouter();
+    state: { coffeeStores },
+  } = useContext(StoreContext);
 
-  if (isFallback) {
-    return <div>Laoding</div>;
+  useEffect(() => {
+    if (isEmpty(initialProps.coffeeStore)) {
+      if (coffeeStores.length > 0) {
+        const coffeeStoreFromContext = coffeeStores.find((coffeeStore) => {
+          return coffeeStore.fsq_id.toString() === id; //dynamic id
+        });
+
+        if (coffeeStoreFromContext) {
+          console.log("coffeeStoreFromContext", coffeeStoreFromContext);
+          setCoffeeStore(coffeeStoreFromContext);
+        }
+      }
+    }
+  }, [coffeeStores, id, initialProps.coffeeStore]);
+
+  let address, name, neighborhood, imgUrl;
+  if (Object.keys(coffeeStore).length > 0) {
+    address = coffeeStore.location.address;
+    name = coffeeStore.name;
+    neighborhood = coffeeStore.location?.neighborhood;
+    imgUrl = coffeeStore.imgUrl;
   }
 
-  const {
-    location,
-    address = "",
-    name = "",
-    neighbourhood = "",
-    imgUrl = "",
-  } = props.coffeeStore;
+  // const [votingCount, setVotingCount] = useState(0);
 
+  if (router.isFallback || !coffeeStore) {
+    return <div>Loading...</div>;
+  }
   return (
     <div className={styles.layout}>
       <Head>
@@ -63,27 +111,27 @@ const CoffeeStore = (props) => {
         <div className={cls("glass", styles.col2)}>
           <div className={styles.iconWrapper}>
             <Image
-              src={"/static/icons/places.svg"}
+              src="/static/icons/places.svg"
               width="24"
               height="24"
               alt="places icon"
             />
-            <p className={styles.text}>{location.address}</p>
+            <p className={styles.text}>{address}</p>
           </div>
-          {location.neighborhood && (
+          {neighborhood && (
             <div className={styles.iconWrapper}>
               <Image
-                src={"/static/icons/nearMe.svg"}
+                src="/static/icons/nearMe.svg"
                 width="24"
                 height="24"
                 alt="near me icon"
               />
-              <p className={styles.text}>{location.neighborhood}</p>
+              <p className={styles.text}>{neighborhood}</p>
             </div>
           )}
           <div className={styles.iconWrapper}>
             <Image
-              src={"/static/icons/star.svg"}
+              src="/static/icons/star.svg"
               width="24"
               height="24"
               alt="star icon"
@@ -99,49 +147,5 @@ const CoffeeStore = (props) => {
     </div>
   );
 };
-
-export async function getStaticProps({ params }) {
-  const data = await fetch(
-    `https://api.foursquare.com/v3/places/nearby?ll=43.65267%2C-79.39545&query=coffee%20stores`,
-    options
-  )
-    .then((response) => response.json())
-    .then((response) => {
-      console.log("response", response);
-      return response.results;
-    })
-    .catch((err) => console.error(err));
-  return {
-    props: {
-      coffeeStore: data.find((coffeeStore) => {
-        return coffeeStore.fsq_id === params.id;
-      }),
-    },
-  };
-}
-
-export async function getStaticPaths() {
-  const data = await fetch(
-    `https://api.foursquare.com/v3/places/nearby?ll=43.65267%2C-79.39545&query=coffee%20stores`,
-    options
-  )
-    .then((response) => response.json())
-    .then((response) => {
-      console.log("response", response);
-      return response.results;
-    })
-    .catch((err) => console.error(err));
-  const paths = data.map((coffeeStore) => {
-    return {
-      params: {
-        id: coffeeStore.fsq_id.toString(),
-      },
-    };
-  });
-  return {
-    paths: paths,
-    fallback: true,
-  };
-}
 
 export default CoffeeStore;

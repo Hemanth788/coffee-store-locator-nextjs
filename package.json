@@ -9,10 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "buffer": "^6.0.3",
     "classnames": "^2.3.1",
     "next": "12.1.1",
     "react": "17.0.2",
-    "react-dom": "17.0.2"
+    "react-dom": "17.0.2",
+    "readable-stream": "^3.6.0",
+    "unsplash-js": "^7.0.15"
   },
   "devDependencies": {
     "eslint": "8.12.0",
