@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
@@ -8,7 +8,6 @@ import cls from "classnames";
 
 import styles from "../../styles/coffee-store.module.css";
 import fetchCoffeeStores from "../../lib/coffee-stores";
-
 import { isEmpty } from "../../utils";
 import { StoreContext } from "../_app";
 
@@ -52,6 +51,37 @@ const CoffeeStore = (initialProps) => {
     state: { coffeeStores },
   } = useContext(StoreContext);
 
+  const handleCreateCoffeeStore = useCallback(async (coffeeStore) => {
+    console.log("handleCreateCoffeeStore coffeeStore", coffeeStore);
+    const {
+      fsq_id: id,
+      name,
+      location: { neighborhood, address },
+      imgUrl,
+      voting,
+    } = coffeeStore;
+    try {
+      const response = await fetch("/api/createCoffeeStore", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id,
+          name,
+          neighborhood: JSON.stringify(neighborhood) || "",
+          address: address || "",
+          imgUrl,
+          voting: 0,
+        }),
+      });
+      const dbCoffeeStore = response.json();
+      console.log({ dbCoffeeStore });
+    } catch (error) {
+      console.error("Error creating coffee store", error);
+    }
+  }, []);
+
   useEffect(() => {
     if (isEmpty(initialProps.coffeeStore)) {
       if (coffeeStores.length > 0) {
@@ -61,10 +91,13 @@ const CoffeeStore = (initialProps) => {
 
         if (coffeeStoreFromContext) {
           setCoffeeStore(coffeeStoreFromContext);
+          handleCreateCoffeeStore(coffeeStoreFromContext);
         }
       }
+    } else {
+      handleCreateCoffeeStore(initialProps.coffeeStore);
     }
-  }, [coffeeStores, id, initialProps.coffeeStore]);
+  }, [coffeeStores, handleCreateCoffeeStore, id, initialProps.coffeeStore]);
 
   let address, name, neighborhood, imgUrl;
   if (Object.keys(coffeeStore).length > 0) {
