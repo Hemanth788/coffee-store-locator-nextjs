@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Image from "next/image";
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useContext, useState } from "react";
 import Banner from "../components/banner";
 import Card from "../components/card";
 import useTrackLocation from "../hooks/useTrackLocation";
@@ -10,19 +10,33 @@ import { StoreContext, ACTION_TYPES } from "./_app";
 export default function Home(props) {
   const { locationErrorMsg, handleTrackLocation, isFindingLocation } =
     useTrackLocation();
+  const [coffeeStoresError, setCoffeeStoresError] = useState(null);
   const { state, dispatch } = useContext(StoreContext);
   const { coffeeStores, latLong } = state;
   useEffect(() => {
-    async function fetchNearbyCoffeeStores() {
-      const fetchedCoffeeStores = await fetchCoffeeStores(latLong, 30);
-      console.log("fetchedCoffeeStores", fetchedCoffeeStores);
-      dispatch({
-        type: ACTION_TYPES.SET_COFFEE_STORES,
-        payload: { coffeeStores: fetchedCoffeeStores },
-      });
-    }
-    fetchNearbyCoffeeStores();
-  }, [dispatch, latLong]);
+    const setCoffeeStoresByLocation = async () => {
+      if (latLong) {
+        try {
+          const response = await fetch(
+            `/api/getCoffeeStoresByLocation?latLong=${latLong}&limit=30`
+          );
+
+          const coffeeStores = await response.json();
+
+          dispatch({
+            type: ACTION_TYPES.SET_COFFEE_STORES,
+            payload: {
+              coffeeStores,
+            },
+          });
+          setCoffeeStoresError("");
+        } catch (error) {
+          setCoffeeStoresError(error.message);
+        }
+      }
+    };
+    setCoffeeStoresByLocation();
+  }, [latLong, dispatch]);
 
   return (
     <div className={styles.container}>
@@ -40,6 +54,7 @@ export default function Home(props) {
           }}
         />
         {locationErrorMsg && <p>Something went wrong: {locationErrorMsg} </p>}
+        {coffeeStoresError && <p>Something went wrong: {coffeeStoresError}</p>}
         <div className={styles.heroImage}>
           <Image
             src={"/static/hero-image.png"}
@@ -48,7 +63,7 @@ export default function Home(props) {
             height={400}
           />
         </div>
-        {coffeeStores?.length != 0 && (
+        {coffeeStores?.length > 0 && (
           <>
             <h2 className={styles.heading2}>Stores near you</h2>
             <div className={styles.cardLayout}>

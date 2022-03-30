@@ -7,7 +7,6 @@ export default function useTrackLocation() {
   const success = (position) => {
     const latitude = position.coords.latitude;
     const longitude = position.coords.longitude;
-    console.log("success", latitude, longitude);
     dispatch({
       type: ACTION_TYPES.SET_LAT_LONG,
       payload: { latLong: `${latitude},${longitude}` },
@@ -20,7 +19,6 @@ export default function useTrackLocation() {
     setLocationErrorMsg("Unable to retrieve location");
   };
   const handleTrackLocation = () => {
-    console.log("handleTrackLocation");
     setIsFindLocation(true);
     if (!navigator.geolocation) {
       setLocationErrorMsg("Geolocation is not supported by your browser");

@@ -60,7 +60,6 @@ const CoffeeStore = (initialProps) => {
         });
 
         if (coffeeStoreFromContext) {
-          console.log("coffeeStoreFromContext", coffeeStoreFromContext);
           setCoffeeStore(coffeeStoreFromContext);
         }
       }
